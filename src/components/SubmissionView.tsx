@@ -248,10 +248,28 @@ export default function SubmissionView({
           {notesEditing ? (
             <div className="space-y-2">
               <textarea
+                ref={(el) => {
+                  if (el) {
+                    requestAnimationFrame(() => {
+                      el.style.height = 'auto';
+                      const maxH = window.innerHeight * 0.66;
+                      el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+                      el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+                    });
+                  }
+                }}
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none min-h-[100px] resize-y font-mono"
+                onChange={(e) => {
+                  setNotes(e.target.value);
+                  const el = e.target;
+                  el.style.height = 'auto';
+                  const maxH = window.innerHeight * 0.66;
+                  el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+                  el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+                }}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none resize-none font-mono"
                 placeholder="Add notes about this submission (Markdown supported)..."
+                rows={Math.max(4, (notes || "").split("\n").length)}
                 autoFocus
               />
               <div className="flex gap-2">

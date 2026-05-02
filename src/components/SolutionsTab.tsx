@@ -148,6 +148,8 @@ export default function SolutionsTab({ problemId, problemSlug }: SolutionsTabPro
     const supabase = createClient();
     const solution = solutions.find((s) => s.id === solutionId);
     if (!solution) return;
+    // Prevent self-liking
+    if (solution.user_id === user.id) return;
 
     if (solution.user_has_liked) {
       await supabase
@@ -224,16 +226,18 @@ export default function SolutionsTab({ problemId, problemSlug }: SolutionsTabPro
     <div>
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-1.5 mb-3">
-        <button
-          onClick={() => setShowMine(!showMine)}
-          className={`cursor-pointer inline-flex items-center rounded-md px-2 py-0.5 text-xs transition ${
-            showMine
-              ? "bg-accent/15 text-accent"
-              : "bg-badge text-muted hover:text-foreground"
-          }`}
-        >
-          My Solutions
-        </button>
+        {user && (
+          <button
+            onClick={() => setShowMine(!showMine)}
+            className={`cursor-pointer inline-flex items-center rounded-md px-2 py-0.5 text-xs transition ${
+              showMine
+                ? "bg-accent/15 text-accent"
+                : "bg-badge text-muted hover:text-foreground"
+            }`}
+          >
+            My Solutions
+          </button>
+        )}
         {allTags.map((tag) => (
           <button
             key={tag}

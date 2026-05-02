@@ -5,6 +5,8 @@ difficulty: "hard"
 tags: ["natural-numbers", "induction", "advanced"]
 sort_order: 10
 main_theorem_name: "strong_induction"
+theorem_type: "(P : Nat \u2192 Prop) \u2192 (\u2200 n, (\u2200 m, m < n \u2192 P m) \u2192 P n) \u2192 \u2200 n, P n"
+allowed_axioms: ['propext', 'Classical.choice', 'Quot.sound']
 starter_code: |
   -- Prove that every natural number has a property P,
   -- given that P holds for n whenever it holds for all m < n.

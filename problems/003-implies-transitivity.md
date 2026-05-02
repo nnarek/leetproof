@@ -5,6 +5,8 @@ difficulty: "easy"
 tags: ["logic", "implication", "tactics"]
 sort_order: 3
 main_theorem_name: "implies_trans"
+theorem_type: "(P Q R : Prop) \u2192 (P \u2192 Q) \u2192 (Q \u2192 R) \u2192 P \u2192 R"
+allowed_axioms: []
 starter_code: |
   -- Prove that implication is transitive.
   -- If P → Q and Q → R, then P → R.

@@ -23,6 +23,7 @@ export async function generateStaticParams() {
     { slug: p.slug, tab: [] },
     { slug: p.slug, tab: ["solutions"] },
     { slug: p.slug, tab: ["submissions"] },
+    { slug: p.slug, tab: ["hints"] },
   ]);
 }
 
@@ -40,7 +41,7 @@ export default async function ProblemPage({ params }: ProblemPageProps) {
   // Parse tab segments: [] = description, ["solutions"] = solutions,
   // ["submissions"] = submissions
   const tabSegments = tab || [];
-  const initialTab = (tabSegments[0] === "solutions" || tabSegments[0] === "submissions")
+  const initialTab = (tabSegments[0] === "solutions" || tabSegments[0] === "submissions" || tabSegments[0] === "hints")
     ? tabSegments[0]
     : "description";
 
@@ -60,6 +61,8 @@ export default async function ProblemPage({ params }: ProblemPageProps) {
               problemId={p.id}
               problemSlug={p.slug}
               mainTheoremName={p.main_theorem_name ?? undefined}
+              theoremType={p.theorem_type ?? undefined}
+              allowedAxioms={p.allowed_axioms ?? undefined}
             />
           </div>
         }

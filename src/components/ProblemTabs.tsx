@@ -8,8 +8,9 @@ import DifficultyBadge from "@/components/DifficultyBadge";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import SubmissionsList from "@/components/SubmissionsList";
 import SolutionsTab from "@/components/SolutionsTab";
+import HintsTab from "@/components/HintsTab";
 
-type Tab = "description" | "solutions" | "submissions";
+type Tab = "description" | "solutions" | "submissions" | "hints";
 
 interface ProblemTabsProps {
   problem: Problem;
@@ -19,7 +20,7 @@ interface ProblemTabsProps {
 export default function ProblemTabs({ problem, initialTab }: ProblemTabsProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>(
-    (initialTab === "solutions" || initialTab === "submissions") ? initialTab : "description"
+    (initialTab === "solutions" || initialTab === "submissions" || initialTab === "hints") ? initialTab : "description"
   );
   const [solved, setSolved] = useState(false);
 
@@ -49,6 +50,7 @@ export default function ProblemTabs({ problem, initialTab }: ProblemTabsProps) {
     { id: "description", label: "Description" },
     { id: "solutions", label: "Solutions" },
     { id: "submissions", label: "Submissions" },
+    { id: "hints", label: "Hints" },
   ];
 
   const handleTabChange = (tab: Tab) => {
@@ -70,7 +72,7 @@ export default function ProblemTabs({ problem, initialTab }: ProblemTabsProps) {
           {solved && (
             <span className="inline-flex items-center gap-1 text-[var(--badge-success-text)]" title="Solved">
               <svg className="h-4 w-4" viewBox="0 0 448 512" fill="currentColor">
-                <path d="M441 103c9.4 9.4 9.4 24.6 0 33.9L177 401c-9.4 9.4-24.6 9.4-33.9 0L7 265c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l119 119L407 103c9.4-9.4 24.6-9.4 33.9 0z" clip-rule="evenodd"></path>
+                <path d="M441 103c9.4 9.4 9.4 24.6 0 33.9L177 401c-9.4 9.4-24.6 9.4-33.9 0L7 265c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l119 119L407 103c9.4-9.4 24.6-9.4 33.9 0z" clipRule="evenodd"></path>
               </svg>
             </span>
           )}
@@ -121,6 +123,9 @@ export default function ProblemTabs({ problem, initialTab }: ProblemTabsProps) {
         )}
         {activeTab === "submissions" && (
           <SubmissionsList problemId={problem.id} />
+        )}
+        {activeTab === "hints" && (
+          <HintsTab problemId={problem.id} problemSlug={problem.slug} />
         )}
       </div>
     </div>

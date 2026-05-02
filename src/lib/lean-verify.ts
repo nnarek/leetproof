@@ -49,15 +49,19 @@ function waitForDiagnostics(
 }
 
 /**
- * Verify a Lean 4 proof by creating a hidden editor with the code + `#print axioms`,
- * waiting for diagnostics, and checking for errors or `sorryAx` usage.
+ * Verify a Lean 4 proof by creating a hidden editor with the code + verification checks,
+ * waiting for diagnostics, and checking for errors or disallowed axioms.
  *
  * Uses a separate hidden LeanMonacoEditor (different file) so the user's
  * visible editor is never modified.
  */
 export async function verifyProof(
   mainEditor: monaco.editor.IStandaloneCodeEditor,
-  theoremName: string
+  theoremName: string,
+  options?: {
+    theoremType?: string;
+    allowedAxioms?: string[];
+  }
 ): Promise<VerifyResult> {
   const mainModel = mainEditor.getModel();
   if (!mainModel) {
@@ -65,7 +69,27 @@ export async function verifyProof(
   }
 
   const code = mainModel.getValue();
-  const verifyCode = code + `\n\n#print axioms ${theoremName}\n`;
+
+  // Build verification code
+  let verifyCode = 'import Lean\n\n' + code + '\n\n';
+
+  // Check theorem signature if type is provided
+  if (options?.theoremType) {
+    verifyCode += `#check (${theoremName} : ${options.theoremType})\n\n`;
+  }
+
+  // Axiom checking
+  const axioms = options?.allowedAxioms ?? [];
+  const axiomNames = axioms.map((a) => '``' + a).join(', ');
+  verifyCode += `#eval show Lean.Meta.MetaM Unit from do
+  let thmName := \`\`${theoremName}
+  let used ← Lean.collectAxioms thmName
+  let allowedNames := [${axiomNames}]
+  let disallowed := used.filter (fun ax => !allowedNames.contains ax)
+  if !disallowed.isEmpty then
+    throwError m!"'{thmName}' theorem uses disallowed axioms: {disallowed.toList}"
+\n`;
+
 
   // Create a hidden container for the verification editor
   const hiddenContainer = document.createElement('div');
@@ -105,16 +129,17 @@ export async function verifyProof(
     }
 
     // Check for sorryAx in any info/warning/hint markers (from #print axioms output)
-    const hasSorryAx = markers.some(
-      (m) =>
-        (m.severity === monaco.MarkerSeverity.Info ||
-          m.severity === monaco.MarkerSeverity.Warning ||
-          m.severity === monaco.MarkerSeverity.Hint) &&
-        m.message.includes('sorryAx')
-    );
-    if (hasSorryAx) {
-      return { valid: false, error: 'Proof uses sorry (sorryAx detected)' };
-    }
+    // Now it is unnecesarry since we check for disallowed axioms in the MetaM code above
+    // const hasSorryAx = markers.some(
+    //   (m) =>
+    //     (m.severity === monaco.MarkerSeverity.Info ||
+    //       m.severity === monaco.MarkerSeverity.Warning ||
+    //       m.severity === monaco.MarkerSeverity.Hint) &&
+    //     m.message.includes('sorryAx')
+    // );
+    // if (hasSorryAx) {
+    //   return { valid: false, error: 'Proof uses sorry (sorryAx detected)' };
+    // }
 
     return { valid: true };
   } finally {

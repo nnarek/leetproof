@@ -5,6 +5,8 @@ difficulty: "hard"
 tags: ["lists", "induction", "program-verification"]
 sort_order: 8
 main_theorem_name: "reverse_reverse"
+theorem_type: "(\u03B1 : Type) \u2192 (xs : List \u03B1) \u2192 xs.reverse.reverse = xs"
+allowed_axioms: ['propext','Classical.choice','Quot.sound']
 starter_code: |
 
   theorem reverse_reverse (α : Type) (xs : List α) : xs.reverse.reverse = xs := by

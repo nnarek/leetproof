@@ -5,6 +5,8 @@ difficulty: "hard"
 tags: ["logic", "classical", "tactics"]
 sort_order: 9
 main_theorem_name: "double_neg_elim"
+theorem_type: "(P : Prop) \u2192 \u00AC\u00ACP \u2192 P"
+allowed_axioms: ['propext', 'Classical.choice', 'Quot.sound']
 starter_code: |
   -- Using classical logic, prove double negation elimination.
   -- Hint: you can use `Classical.em` which gives `P ∨ ¬P`.

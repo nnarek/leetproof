@@ -158,6 +158,121 @@ The editor uses **lean4monaco** (from npm) which provides Monaco editor + Lean 4
 - `src/components/Lean4EditorInner.tsx` — Implementation with split pane (editor + infoview)
 - `src/lib/lean4web/` — Adapted lean4web frontend code (keep synced with upstream)
 
+## Hints System
+
+The hints system provides structured, progressive guidance for solving problems. Users can create "hint packs" — collections of hints stored as YAML — that other users can use to get incremental help.
+
+### Architecture
+
+- **Storage**: Hint packs are stored in the `hint_packs` table as raw YAML text.
+- **Likes**: Users can upvote hint packs via `hint_pack_likes` table.
+- **UI**: The "Hints" tab in `ProblemTabs` shows hint packs sorted by likes, with the top-liked pack auto-expanded.
+- **Editor integration**: Code completions are applied via `executeEdits()` (undo-safe via Ctrl+Z).
+- **Events**: Communication between HintsTab and editor uses CustomEvents:
+  - `leetlean:request-code` — HintsTab requests current editor code
+  - `leetlean:code-updated` — Editor broadcasts code changes
+  - `leetlean:apply-hint-code` — HintsTab sends new code to editor
+
+### YAML Format (step-based)
+
+The project now uses a step-based hint YAML format. Each hint contains an ordered list of `steps`; each step has a `description` and optional `code_completions`. A `force_find` regex (per-hint) is still used for force-replace operations.
+
+```yaml
+name: "My Hint Pack Name"
+hints:
+  - name: "Helper Lemma Name"
+    force_find: "regex matching ANY state of the code section (for force-replace)"
+    steps:
+      - name: "Step 1: idea"
+        description: "Short one-line description of what this step is about"
+      - name: "Step 2: lemma signature"
+        description: "Add the helper lemma signature"
+        code_completions:
+          - name: "Signature"
+            find: "regex matching the current code state"
+            replace: "replacement code (next incremental step)"
+          - name: "Fill signature"
+            find: "regex matching the state after step 1"
+            replace: "replacement code (more complete)"
+  - name: "Main Theorem Name"
+    force_find: "..."
+    steps:
+      - name: "Main idea"
+        description: "High-level approach"
+      - name: "Proof"
+        description: "Detailed inductive proof"
+        code_completions:
+          - name: "Start proof"
+            find: "..."
+            replace: "..."
+```
+
+Notes:
+- `steps` is the primary structure: each step renders a collapsible description and its buttons.
+- `code_completions` entries may include an optional `name` (used as the button label), plus `find` and `replace`.
+- For backward compatibility the parser still accepts the legacy format that used `descriptions` + a flat `code_completions` list; the loader converts legacy `descriptions` into `steps` and attaches legacy `code_completions` to the last step.
+
+### How Hints Work
+
+1. Each hint pack contains multiple **hints** (displayed as "Hint 1", "Hint 2", ..., "Final").
+2. Each hint is an ordered list of `steps`:
+  - **Step `name`**: Short label shown in the step header.
+  - **`description`**: Markdown rendered when the step is expanded.
+  - **`code_completions`** (optional): An ordered list of completion entries `{ name?, find, replace }` that are applied sequentially.
+  - **`force_find`** (per-hint): A regex that matches the whole theorem/lemma region for force-replace operations.
+
+3. UI behaviour:
+  - Steps are independent, collapsible units; each step has its own chevron and header.
+  - When expanded, the step shows its `description` followed by the step's buttons (if any). Buttons are aligned with the chevron and have a small gap from the description for readability.
+  - The UI intentionally omits separate "Brief/Detail/Code Completions" labels — the step header, description and buttons are the primary affordances.
+
+4. Applying completions:
+  - If a completion's `find` regex matches the current editor text the completion is considered **ready** (accent/blue) and can be applied.
+  - Clicking a **ready** completion will first attempt to apply any earlier ready completions within the same hint (chaining), then apply the clicked completion.
+  - If the completion is **not ready**, the button shows as **force** (orange). Clicking it performs a force-apply: the `force_find` regex is used to replace the matched region with step-0's `replace`, then steps are applied sequentially up to the clicked completion.
+  - `force_find` should target the full code block (e.g. `"theorem foo[\\s\\S]*?(?=\\n\\n|\\n--|\\n#|$)"`).
+
+5. Undo support: All code modifications use Monaco's `executeEdits` together with undo stops; users can Ctrl+Z to revert a single hint application.
+
+6. Backwards compatibility: The parser accepts both the new step-based format and the legacy `descriptions` + flat `code_completions` format; legacy packs are converted at load time into the step structure.
+
+### Writing Good Hint Packs
+
+**Structure advice:**
+- First hint should be about a helper lemma not dependent on others in the problem.
+- Later hints can build on earlier ones.
+- For problems with no helper lemmas, use a single hint with multiple code completion steps.
+
+**Regex tips:**
+- Use `\\s*` or `\\s+` for flexible whitespace matching.
+- Use `[\\s\\S]*?` for multi-line lazy matching.
+- `force_find` should match from the theorem/lemma name to the next definition boundary: `"theorem foo[\\s\\S]*?(?=\\n\\n|\\n--|\\n#|$)"`
+- Escape special regex characters in theorem names: `\\(`, `\\)`, `\\.`, `\\+`
+- Use `(?=...)` lookahead for boundaries without consuming them.
+- Test regexes against both the initial starter code AND each intermediate state.
+
+**Code completion steps:**
+- Each step should be a meaningful incremental improvement (e.g., add structure → fill base case → fill inductive case).
+- The `replace` text should be the COMPLETE code for that section at that step (not a diff).
+- Make sure step N's `find` matches exactly what step N-1's `replace` produces.
+
+### Example hint pack files
+
+See `problems/hints/008-list-reverse-reverse.yaml` for a reference implementation.
+
+### Database Tables
+
+- `hint_packs`: id, user_id, problem_id, yaml_content, created_at, updated_at
+- `hint_pack_likes`: hint_pack_id, user_id, created_at (composite PK)
+
+### Key Files
+
+- `src/components/HintsTab.tsx` — Hints tab UI with pack listing, expand/collapse, and code completion buttons
+- `src/lib/hints.ts` — YAML parser and code completion logic (findCurrentStep, canApplyStep, applyStep, forceApplyStep)
+- `src/lib/types.ts` — HintPack, ParsedHintPack, ParsedHint, HintCodeCompletion types
+- `supabase/migrations/008_hint_packs.sql` — Database schema
+- `problems/hints/` — Example YAML hint pack files
+
 ## Future Work Ideas
 
 - Submission tracking and verification

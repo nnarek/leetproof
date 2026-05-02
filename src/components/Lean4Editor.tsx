@@ -20,6 +20,8 @@ interface Lean4EditorProps {
   problemId?: string;
   problemSlug?: string;
   mainTheoremName?: string;
+  theoremType?: string;
+  allowedAxioms?: string[];
 }
 
 /**
@@ -27,8 +29,8 @@ interface Lean4EditorProps {
  * Connects to the remote Lean server at live.lean-lang.org via WebSocket.
  * Code is persisted per-problem in localStorage.
  */
-export default function Lean4Editor({ code, problemId, problemSlug, mainTheoremName }: Lean4EditorProps) {
+export default function Lean4Editor({ code, problemId, problemSlug, mainTheoremName, theoremType, allowedAxioms }: Lean4EditorProps) {
   // key forces full remount (including WebSocket reconnect) when the problem changes,
   // so the init useEffect re-runs and loads the correct per-problem saved code.
-  return <Lean4EditorInner key={problemId || problemSlug} code={code} problemId={problemId} problemSlug={problemSlug} mainTheoremName={mainTheoremName} />;
+  return <Lean4EditorInner key={problemId || problemSlug} code={code} problemId={problemId} problemSlug={problemSlug} mainTheoremName={mainTheoremName} theoremType={theoremType} allowedAxioms={allowedAxioms} />;
 }

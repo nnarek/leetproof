@@ -298,10 +298,28 @@ export default function SolutionView({ solution: sol, onBack, onLike, onUpdated 
           {notesEditing ? (
             <div className="space-y-2">
               <textarea
+                ref={(el) => {
+                  if (el) {
+                    requestAnimationFrame(() => {
+                      el.style.height = 'auto';
+                      const maxH = window.innerHeight * 0.66;
+                      el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+                      el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+                    });
+                  }
+                }}
                 value={notesValue}
-                onChange={(e) => setNotesValue(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none min-h-[120px] resize-y font-mono"
+                onChange={(e) => {
+                  setNotesValue(e.target.value);
+                  const el = e.target;
+                  el.style.height = 'auto';
+                  const maxH = window.innerHeight * 0.66;
+                  el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+                  el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+                }}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none resize-none font-mono"
                 placeholder="Add notes about your solution (Markdown supported)..."
+                rows={Math.max(4, (notesValue || "").split("\n").length)}
                 autoFocus
               />
               <div className="flex gap-2">

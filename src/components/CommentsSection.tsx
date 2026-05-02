@@ -30,7 +30,7 @@ export default function CommentsSection({ solutionId }: CommentsSectionProps) {
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [posting, setPosting] = useState(false);
-  const [replyingTo, setReplyingTo] = useState<{ id: string; username: string; userId: string } | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; commentId: string; username: string; userId: string } | null>(null);
   const [replyText, setReplyText] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
@@ -134,7 +134,7 @@ export default function CommentsSection({ solutionId }: CommentsSectionProps) {
     fetchComments();
   };
 
-  const handleReply = async (parentId: string, replyToUserId: string | null) => {
+  const handleReply = async (parentId: string, replyToUserId: string | null, repliedToCommentId: string | null) => {
     if (!user || !replyText.trim()) return;
     const supabase = createClient();
     await supabase.from("solution_comments").insert({
@@ -142,6 +142,7 @@ export default function CommentsSection({ solutionId }: CommentsSectionProps) {
       user_id: user.id,
       parent_id: parentId,
       reply_to_user_id: replyToUserId,
+      replied_to_comment_id: repliedToCommentId,
       content: replyText.trim(),
     });
     setReplyText("");
@@ -189,6 +190,8 @@ export default function CommentsSection({ solutionId }: CommentsSectionProps) {
     const supabase = createClient();
     const comment = findComment(commentId);
     if (!comment) return;
+    // Prevent self-liking
+    if (comment.user_id === user.id) return;
 
     if (comment.user_has_liked) {
       await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", user.id);
@@ -270,9 +273,27 @@ export default function CommentsSection({ solutionId }: CommentsSectionProps) {
           ) : editingId === comment.id ? (
             <div className="mt-1 space-y-1">
               <textarea
+                ref={(el) => {
+                  if (el) {
+                    requestAnimationFrame(() => {
+                      el.style.height = 'auto';
+                      const maxH = window.innerHeight * 0.66;
+                      el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+                      el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+                    });
+                  }
+                }}
                 value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                className="w-full rounded border border-border bg-background px-2 py-1 text-sm text-foreground focus:border-accent focus:outline-none min-h-[60px] resize-y"
+                onChange={(e) => {
+                  setEditText(e.target.value);
+                  const el = e.target;
+                  el.style.height = 'auto';
+                  const maxH = window.innerHeight * 0.66;
+                  el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+                  el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+                }}
+                className="w-full rounded border border-border bg-background px-2 py-1 text-sm text-foreground focus:border-accent focus:outline-none resize-none"
+                rows={Math.max(3, (editText || "").split("\n").length)}
                 autoFocus
               />
               <div className="flex gap-1">
@@ -312,7 +333,7 @@ export default function CommentsSection({ solutionId }: CommentsSectionProps) {
               {user && (
                 <button
                   onClick={() => {
-                    setReplyingTo({ id: parentId || comment.id, username, userId: comment.user_id });
+                    setReplyingTo({ id: parentId || comment.id, commentId: comment.id, username, userId: comment.user_id });
                     setReplyText("");
                   }}
                   className="text-[11px] text-muted hover:text-foreground"
@@ -357,10 +378,28 @@ export default function CommentsSection({ solutionId }: CommentsSectionProps) {
       {user ? (
         <div className="space-y-2 mb-4">
           <textarea
+            ref={(el) => {
+              if (el) {
+                requestAnimationFrame(() => {
+                  el.style.height = 'auto';
+                  const maxH = window.innerHeight * 0.66;
+                  el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+                  el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+                });
+              }
+            }}
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none min-h-[60px] resize-y"
+            onChange={(e) => {
+              setNewComment(e.target.value);
+              const el = e.target;
+              el.style.height = 'auto';
+              const maxH = window.innerHeight * 0.66;
+              el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+              el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+            }}
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted/50 focus:border-accent focus:outline-none resize-none"
             placeholder="Write a comment (Markdown supported)..."
+            rows={3}
           />
           <button
             onClick={handlePost}
@@ -415,15 +454,33 @@ export default function CommentsSection({ solutionId }: CommentsSectionProps) {
             {replyingTo && replyingTo.id === comment.id && (
               <div className="ml-6 mt-2 space-y-1">
                 <textarea
+                  ref={(el) => {
+                    if (el) {
+                      requestAnimationFrame(() => {
+                        el.style.height = 'auto';
+                        const maxH = window.innerHeight * 0.66;
+                        el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+                        el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+                      });
+                    }
+                  }}
                   value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  className="w-full rounded border border-border bg-background px-2 py-1 text-sm text-foreground focus:border-accent focus:outline-none min-h-[50px] resize-y"
+                  onChange={(e) => {
+                    setReplyText(e.target.value);
+                    const el = e.target;
+                    el.style.height = 'auto';
+                    const maxH = window.innerHeight * 0.66;
+                    el.style.height = Math.min(el.scrollHeight, maxH) + 'px';
+                    el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+                  }}
+                  className="w-full rounded border border-border bg-background px-2 py-1 text-sm text-foreground focus:border-accent focus:outline-none resize-none"
                   placeholder={`Reply to @${replyingTo.username}...`}
+                  rows={2}
                   autoFocus
                 />
                 <div className="flex gap-1">
                   <button
-                    onClick={() => handleReply(comment.id, replyingTo.userId)}
+                    onClick={() => handleReply(comment.id, replyingTo.userId, replyingTo.commentId)}
                     disabled={!replyText.trim()}
                     className="vscode-menu-btn disabled:opacity-50"
                     style={replyText.trim() ? { background: '#0078d4', color: '#fff' } : undefined}

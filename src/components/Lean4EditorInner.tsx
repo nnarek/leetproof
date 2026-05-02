@@ -26,12 +26,14 @@ interface Lean4EditorInnerProps {
   problemId?: string;
   problemSlug?: string;
   mainTheoremName?: string;
+  theoremType?: string;
+  allowedAxioms?: string[];
 }
 
-export default function Lean4EditorInner({ code: initialCode, problemId, problemSlug, mainTheoremName }: Lean4EditorInnerProps) {
+export default function Lean4EditorInner({ code: initialCode, problemId, problemSlug, mainTheoremName, theoremType, allowedAxioms }: Lean4EditorInnerProps) {
   return (
     <Provider>
-      <Lean4EditorCore initialCode={initialCode} problemId={problemId} problemSlug={problemSlug} mainTheoremName={mainTheoremName} />
+      <Lean4EditorCore initialCode={initialCode} problemId={problemId} problemSlug={problemSlug} mainTheoremName={mainTheoremName} theoremType={theoremType} allowedAxioms={allowedAxioms} />
     </Provider>
   );
 }
@@ -64,7 +66,7 @@ function buildVSCodeOptions(settings: { theme: string; wordWrap: boolean; accept
   };
 }
 
-function Lean4EditorCore({ initialCode, problemId, problemSlug, mainTheoremName }: { initialCode?: string; problemId?: string; problemSlug?: string; mainTheoremName?: string }) {
+function Lean4EditorCore({ initialCode, problemId, problemSlug, mainTheoremName, theoremType, allowedAxioms }: { initialCode?: string; problemId?: string; problemSlug?: string; mainTheoremName?: string; theoremType?: string; allowedAxioms?: string[] }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const infoviewRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -238,6 +240,47 @@ function Lean4EditorCore({ initialCode, problemId, problemSlug, mainTheoremName 
     return () => window.removeEventListener('leetlean:load-code', handleLoadCode);
   }, [editor, setCode, storageId]);
 
+  // Listen for hint code application events (uses executeEdits for undo support)
+  useEffect(() => {
+    const handleApplyHint = (e: Event) => {
+      const newCode = (e as CustomEvent).detail?.code;
+      if (typeof newCode === 'string' && editor) {
+        const model = editor.getModel();
+        if (!model) return;
+        const fullRange = model.getFullModelRange();
+        editor.pushUndoStop();
+        editor.executeEdits('hint-apply', [{
+          range: fullRange,
+          text: newCode,
+          forceMoveMarkers: true,
+        }]);
+        editor.pushUndoStop();
+        setCode(newCode);
+        if (storageId) saveCodeForProblem(storageId, newCode);
+      }
+    };
+    window.addEventListener('leetlean:apply-hint-code', handleApplyHint);
+    return () => window.removeEventListener('leetlean:apply-hint-code', handleApplyHint);
+  }, [editor, setCode, storageId]);
+
+  // Broadcast code changes to hints tab & respond to code requests
+  useEffect(() => {
+    if (!editor) return;
+    const broadcastCode = () => {
+      const val = editor.getModel()?.getValue() ?? '';
+      window.dispatchEvent(new CustomEvent('leetlean:code-updated', { detail: { code: val } }));
+    };
+    const handleRequestCode = () => broadcastCode();
+    window.addEventListener('leetlean:request-code', handleRequestCode);
+    const disposable = editor.onDidChangeModelContent(() => broadcastCode());
+    // Broadcast initial code
+    broadcastCode();
+    return () => {
+      window.removeEventListener('leetlean:request-code', handleRequestCode);
+      disposable.dispose();
+    };
+  }, [editor]);
+
   // Disable context menu outside editor
   useEffect(() => {
     const handleContextMenu = (event: MouseEvent) => {
@@ -289,7 +332,10 @@ function Lean4EditorCore({ initialCode, problemId, problemSlug, mainTheoremName 
     setSubmitMessage(null);
 
     try {
-      const result = await verifyProof(editor, mainTheoremName);
+      const result = await verifyProof(editor, mainTheoremName, {
+        theoremType,
+        allowedAxioms,
+      });
 
       const supabase = createClient();
       const currentCode = editor.getModel()?.getValue() || '';
@@ -325,7 +371,7 @@ function Lean4EditorCore({ initialCode, problemId, problemSlug, mainTheoremName 
     } finally {
       setSubmitting(false);
     }
-  }, [user, problemId, mainTheoremName, editor]);
+  }, [user, problemId, mainTheoremName, theoremType, allowedAxioms, editor]);
 
   return (
     <div className="lean4web-root monaco-workbench">

@@ -5,6 +5,8 @@ difficulty: "medium"
 tags: ["logic", "or", "tactics"]
 sort_order: 5
 main_theorem_name: "or_comm_proof"
+theorem_type: "(P Q : Prop) \u2192 P \u2228 Q \u2192 Q \u2228 P"
+allowed_axioms: []
 starter_code: |
   -- Prove that disjunction is commutative.
 

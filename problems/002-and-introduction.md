@@ -5,6 +5,8 @@ difficulty: "easy"
 tags: ["logic", "and", "tactics"]
 sort_order: 2
 main_theorem_name: "and_intro"
+theorem_type: "(p : Prop) \u2192 (q : Prop) \u2192 p \u2192 q \u2192 p \u2227 q"
+allowed_axioms: []
 starter_code: |
   -- Prove that if P and Q are both true, then P ∧ Q is true.
 

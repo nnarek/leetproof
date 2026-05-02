@@ -5,6 +5,8 @@ difficulty: "medium"
 tags: ["natural-numbers", "induction", "arithmetic"]
 sort_order: 6
 main_theorem_name: "add_comm"
+theorem_type: "(m n : Nat) \u2192 m + n = n + m"
+allowed_axioms: ['propext']
 starter_code: |
   -- Prove that addition of natural numbers is commutative.
   -- You will need induction and some helper lemmas.

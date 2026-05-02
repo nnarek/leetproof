@@ -5,6 +5,8 @@ difficulty: "easy"
 tags: ["natural-numbers", "induction", "arithmetic"]
 sort_order: 4
 main_theorem_name: "add_zero_right"
+theorem_type: "(n : Nat) \u2192 n + 0 = n"
+allowed_axioms: ['propext']
 starter_code: |
   -- Prove that adding zero on the right gives back the same number.
 

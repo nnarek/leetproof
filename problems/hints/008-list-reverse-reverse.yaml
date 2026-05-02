@@ -1,0 +1,35 @@
+name: "Bidirectional Induction Approach"
+hints:
+  - force_find: "(?:theorem reverse_append[\\s\\S]*?(?=\\ntheorem|\\n\\ntheorem|$))?theorem reverse_reverse[\\s\\S]*?(?=\\n\\n|\\n--|\\n#|$)"
+    steps:
+      - name: "Helper lemmas definition"
+        description: "You need a helper lemma about how reverse distributes over append" 
+      - name: "Helper lemmas signature"
+        description: "`(xs ++ ys).reverse = ys.reverse ++ xs.reverse`"
+        code_completions:
+          - name: "Signature"
+            find: "(\\n?)theorem reverse_reverse \\(α : Type\\) \\(xs : List α\\) : xs\\.reverse\\.reverse = xs := by\\s*sorry"
+            replace: "\n\ntheorem reverse_append (α : Type) (xs ys : List α) :\n    (xs ++ ys).reverse = ys.reverse ++ xs.reverse := by\n  sorry\n\ntheorem reverse_reverse (α : Type) (xs : List α) : xs.reverse.reverse = xs := by\n  sorry"
+      - name: "Helper lemmas proof"
+        description: "Prove `reverse_append` by induction on `xs`. The base case simplifies directly. In the inductive step, unfold `reverse_cons`, rewrite with the IH, and use associativity of append (`List.append_assoc`)."
+        code_completions:
+          - name: "Start of proof"
+            find: "theorem reverse_append \\(α : Type\\) \\(xs ys : List α\\) :\\s*\\(xs \\+\\+ ys\\)\\.reverse = ys\\.reverse \\+\\+ xs\\.reverse := by\\s*sorry"
+            replace: "theorem reverse_append (α : Type) (xs ys : List α) :\n    (xs ++ ys).reverse = ys.reverse ++ xs.reverse := by\n  induction xs with\n  | nil => simp\n  | cons x xs ih => sorry"
+          - name: "Final proof"
+            find: "theorem reverse_append \\(α : Type\\) \\(xs ys : List α\\) :\\s*\\(xs \\+\\+ ys\\)\\.reverse = ys\\.reverse \\+\\+ xs\\.reverse := by\\s*induction xs with\\s*\\| nil => simp\\s*\\| cons x xs ih => sorry"
+            replace: "theorem reverse_append (α : Type) (xs ys : List α) :\n    (xs ++ ys).reverse = ys.reverse ++ xs.reverse := by\n  induction xs with\n  | nil => simp\n  | cons x xs ih => simp [List.reverse_cons, ih, List.append_assoc]"
+
+  - force_find: "theorem reverse_reverse \\(α : Type\\) \\(xs : List α\\) : xs\\.reverse\\.reverse = xs := by[\\s\\S]*?(?=\\n\\n|\\n--|\\n#|$)"
+    steps:
+      - name: "Main theorem approach"
+        description: "For the main theorem, use induction on `xs` and apply `reverse_append` in the inductive step."
+      - name: "Main theorem proof"
+        description: "Do `induction xs with`. The nil case is trivial (`simp`). For cons, unfold `reverse_cons`, apply `reverse_append`, then use the induction hypothesis."
+        code_completions:
+          - name: "Start of proof"
+            find: "theorem reverse_reverse \\(α : Type\\) \\(xs : List α\\) : xs\\.reverse\\.reverse = xs := by\\s*sorry"
+            replace: "theorem reverse_reverse (α : Type) (xs : List α) : xs.reverse.reverse = xs := by\n  induction xs with\n  | nil => simp\n  | cons x xs ih => sorry"
+          - name: "Final proof"
+            find: "theorem reverse_reverse \\(α : Type\\) \\(xs : List α\\) : xs\\.reverse\\.reverse = xs := by\\s*induction xs with\\s*\\| nil => simp\\s*\\| cons x xs ih => sorry"
+            replace: "theorem reverse_reverse (α : Type) (xs : List α) : xs.reverse.reverse = xs := by\n  induction xs with\n  | nil => simp\n  | cons x xs ih => simp [List.reverse_cons, reverse_append, ih]"

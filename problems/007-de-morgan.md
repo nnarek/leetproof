@@ -5,6 +5,8 @@ difficulty: "medium"
 tags: ["logic", "negation", "classical"]
 sort_order: 7
 main_theorem_name: "de_morgan"
+theorem_type: "(P Q : Prop) \u2192 \u00AC(P \u2228 Q) \u2192 \u00ACP \u2227 \u00ACQ"
+allowed_axioms: ['propext'] # TODO simple proof does not require any additional axiom, so consider to make this list empty
 starter_code: |
   -- Prove one direction of De Morgan's Law.
   -- ¬(P ∨ Q) → ¬P ∧ ¬Q

@@ -5,6 +5,8 @@ difficulty: "easy"
 tags: ["basics", "introduction"]
 sort_order: 1
 main_theorem_name: "hello_lean"
+theorem_type: "True"
+allowed_axioms: []
 starter_code: |
   -- Welcome to LeetLean!
   -- Your goal: make this file compile with no errors.
