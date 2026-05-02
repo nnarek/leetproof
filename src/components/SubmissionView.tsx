@@ -122,7 +122,7 @@ export default function SubmissionView({
         : "badge-warning";
 
   return (
-    <div className="space-y-3 pt-2">
+    <div className="space-y-3 pt-4">
       {/* Navigation */}
       <div className="flex items-center justify-between">
         <button

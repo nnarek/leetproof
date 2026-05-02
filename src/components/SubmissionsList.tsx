@@ -99,15 +99,15 @@ export default function SubmissionsList({ problemId }: SubmissionsListProps) {
   }
 
   if (!user) {
-    return <p className="text-sm text-muted">Sign in to see your submissions.</p>;
+    return <p className="text-sm text-muted py-4">Sign in to see your submissions.</p>;
   }
 
   if (loading) {
-    return <p className="text-sm text-muted">Loading submissions...</p>;
+    return <p className="text-sm text-muted py-4">Loading submissions...</p>;
   }
 
   if (submissions.length === 0) {
-    return <p className="text-sm text-muted">No submissions yet. Submit a proof from the editor.</p>;
+    return <p className="text-sm text-muted py-4">No submissions yet. Submit a proof from the editor.</p>;
   }
 
   return (

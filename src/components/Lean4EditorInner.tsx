@@ -342,7 +342,7 @@ function Lean4EditorCore({ initialCode, problemId, problemSlug, mainTheoremName 
         }}
       >
         <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--foreground)' }}>
-          Lean 4 Editor
+          {/* Lean 4 Editor */}
         </span>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {problemId && mainTheoremName && (

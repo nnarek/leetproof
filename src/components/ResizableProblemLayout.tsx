@@ -87,7 +87,7 @@ export default function ResizableProblemLayout({
       <div
         onMouseDown={handleMouseDown}
         className={`
-          relative z-10 flex w-2 flex-shrink-0 cursor-col-resize items-center justify-center
+          relative z-10 flex w-1 flex-shrink-0 cursor-col-resize items-center justify-center
           transition-colors duration-150
           ${isDragging ? "bg-[#6aadfe]/40" : "bg-white-700/50 hover:bg-[#6aadfe]/30"}
         `}
