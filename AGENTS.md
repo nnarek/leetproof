@@ -137,7 +137,7 @@ The editor uses **lean4monaco** (from npm) which provides Monaco editor + Lean 4
 **Code persistence:**
 - Code is stored in browser `localStorage` with key `leetproof:editor-code`
 - Code persists across page refreshes without URL manipulation
-- User can open current code in live.lean-lang.org via "Open in new tab ↗" button
+- User can open current code in live.lean-lang.org via "Open↗" button
 
 **Theme sync:**
 - Editor theme automatically syncs with the app's `data-theme` attribute

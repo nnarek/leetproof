@@ -505,7 +505,7 @@ function Lean4EditorCore({ initialCode, problemId, problemSlug, mainTheoremName,
             className="vscode-menu-btn"
             title="Open in lean4web"
           >
-            Open in new tab ↗
+            Open↗
           </a>
         </div>
       </div>
