@@ -70,64 +70,51 @@ export default function ResizableProblemLayout({
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <>
-      {/* Side-by-side on md+ screens */}
+    <div
+      ref={containerRef}
+      className="flex min-h-0 w-full flex-1 items-stretch"
+      style={{ position: "relative" }}
+    >
+      {/* Left panel */}
       <div
-        ref={containerRef}
-        className="hidden md:flex min-h-0 w-full flex-1 items-stretch"
-        style={{ position: "relative" }}
+        className="h-full min-h-0 overflow-y-auto"
+        style={{ width: `${leftPercent}%`, minWidth: minPanelPx }}
       >
-        {/* Left panel */}
-        <div
-          className="h-full min-h-0 overflow-y-auto"
-          style={{ width: `${leftPercent}%`, minWidth: minPanelPx }}
-        >
-          {left}
-        </div>
-
-        {/* Draggable divider */}
-        <div
-          onMouseDown={handleMouseDown}
-          className={`
-            relative z-10 flex w-1 flex-shrink-0 cursor-col-resize items-center justify-center
-            transition-colors duration-150
-            ${isDragging ? "bg-[#6aadfe]/40" : "bg-white-700/50 hover:bg-[#6aadfe]/30"}
-          `}
-          title="Drag to resize"
-        >
-          {/* Visual grip dots */}
-          <div className="flex flex-col gap-1">
-            <span className="block h-1 w-1 rounded-full bg-zinc-400" />
-            <span className="block h-1 w-1 rounded-full bg-zinc-400" />
-            <span className="block h-1 w-1 rounded-full bg-zinc-400" />
-            <span className="block h-1 w-1 rounded-full bg-zinc-400" />
-            <span className="block h-1 w-1 rounded-full bg-zinc-400" />
-          </div>
-        </div>
-
-        {/* Right panel */}
-        <div
-          className="h-full min-h-0 overflow-y-auto"
-          style={{ width: `${100 - leftPercent}%`, minWidth: minPanelPx }}
-        >
-          {right}
-        </div>
-
-        {/* Overlay while dragging — prevents iframe from capturing mouse events */}
-        {isDragging && (
-          <div className="fixed inset-0 z-50 cursor-col-resize" />
-        )}
+        {left}
       </div>
 
-      {/* Stacked on small screens */}
-      <div className="flex md:hidden flex-col w-full min-h-0 flex-1">
-        <div className="min-h-[320px] overflow-y-auto border-b border-border">
-          {left}
-        </div>
-        <div className="min-h-[320px] flex-1 overflow-y-auto">
-          {right}
+      {/* Draggable divider */}
+      <div
+        onMouseDown={handleMouseDown}
+        className={`
+          relative z-10 flex w-1 flex-shrink-0 cursor-col-resize items-center justify-center
+          transition-colors duration-150
+          ${isDragging ? "bg-[#6aadfe]/40" : "bg-white-700/50 hover:bg-[#6aadfe]/30"}
+        `}
+        title="Drag to resize"
+      >
+        {/* Visual grip dots */}
+        <div className="flex flex-col gap-1">
+          <span className="block h-1 w-1 rounded-full bg-zinc-400" />
+          <span className="block h-1 w-1 rounded-full bg-zinc-400" />
+          <span className="block h-1 w-1 rounded-full bg-zinc-400" />
+          <span className="block h-1 w-1 rounded-full bg-zinc-400" />
+          <span className="block h-1 w-1 rounded-full bg-zinc-400" />
         </div>
       </div>
-    </>
+
+      {/* Right panel */}
+      <div
+        className="h-full min-h-0 overflow-y-auto"
+        style={{ width: `${100 - leftPercent}%`, minWidth: minPanelPx }}
+      >
+        {right}
+      </div>
+
+      {/* Overlay while dragging — prevents iframe from capturing mouse events */}
+      {isDragging && (
+        <div className="fixed inset-0 z-50 cursor-col-resize" />
+      )}
+    </div>
   );
 }
