@@ -33,4 +33,3 @@ hints:
           - name: "Final proof"
             find: "theorem reverse_reverse \\(α : Type\\) \\(xs : List α\\) : xs\\.reverse\\.reverse = xs := by\\s*induction xs with\\s*\\| nil => simp\\s*\\| cons x xs ih => sorry"
             replace: "theorem reverse_reverse (α : Type) (xs : List α) : xs.reverse.reverse = xs := by\n  induction xs with\n  | nil => simp\n  | cons x xs ih => simp [List.reverse_cons, reverse_append, ih]"
- 
