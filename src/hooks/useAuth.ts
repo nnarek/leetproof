@@ -44,10 +44,12 @@ export function useAuth() {
   }, [supabase]);
 
   const setCurrentUser = useCallback(async (nextUser: User | null) => {
-    setUser(nextUser);
     if (nextUser) {
+      setProfile((currentProfile) => currentProfile?.id === nextUser.id ? currentProfile : null);
+      setUser(nextUser);
       await loadProfile(nextUser.id);
     } else {
+      setUser(null);
       setProfile(null);
     }
   }, [loadProfile]);
@@ -78,8 +80,10 @@ export function useAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      void setCurrentUser(session?.user ?? null);
-      setLoading(false);
+      void (async () => {
+        await setCurrentUser(session?.user ?? null);
+        setLoading(false);
+      })();
     });
 
     return () => subscription.unsubscribe();

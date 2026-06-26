@@ -72,7 +72,6 @@ export default function Navbar() {
                         id: user.id,
                         email: user.email ?? null,
                         full_name: user.user_metadata?.full_name ?? null,
-                        avatar_url: user.user_metadata?.avatar_url ?? null,
                       }
                     }
                     size="md"
