@@ -394,7 +394,7 @@ export default function ProblemsClient() {
                 <thead>
                   <tr className="border-b border-border bg-surface">
                     
-                    <th className="w-0 px-2.5 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted">
+                    <th className="w-7 px-2.5 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted">
                       #
                     </th>
                     <th className="w-2 px-1 py-2 text-center text-xs font-medium uppercase tracking-wider text-muted">
@@ -402,7 +402,7 @@ export default function ProblemsClient() {
                     <th className="w-[40%] px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted">
                       Title
                     </th>
-                    <th className="w-9 px-2 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted">
+                    <th className="w-20 px-2 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted">
                       Difficulty
                     </th>
                     <th className="w-40 px-2 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted">
@@ -427,7 +427,7 @@ export default function ProblemsClient() {
                         onClick={() => router.push(`/problems/${problem.slug}`)}
                         className="transition hover:bg-hover cursor-pointer"
                       >
-                        <td className="px-5 py-2.5 text-sm font-mono text-muted">
+                        <td className="px-2.5 py-2.5 text-center text-sm font-mono text-muted">
                           {problem.sort_order}
                         </td>
                         <td className="px-1 py-2.5 text-center">
