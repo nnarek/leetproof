@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LeetProof — Theorem Proving in Lean 4",
+  title: "LeetProof — Theorem Proving Platform",
   description:
     "Sharpen your Lean 4 skills by proving theorems and verifying code. Share solutions and hints with the community.",
 };

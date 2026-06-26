@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Lean4Editor from "@/components/Lean4Editor";
 import ResizableProblemLayout from "@/components/ResizableProblemLayout";
 import ProblemTabs from "@/components/ProblemTabs";
+import type { Metadata } from "next";
 
 // In static-export mode revalidate is ignored (pages are built once).
 // In server mode this enables ISR every 60 s.
@@ -25,6 +26,25 @@ export async function generateStaticParams() {
     { slug: p.slug, tab: ["submissions"] },
     { slug: p.slug, tab: ["hints"] },
   ]);
+}
+
+export async function generateMetadata({
+  params,
+}: ProblemPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const db = await getServerDatabase();
+  const problem = await db.getProblemBySlug(slug);
+
+  if (!problem) {
+    return {
+      title: "Problem Not Found - LeetProof",
+    };
+  }
+
+  return {
+    title: `${problem.title} - LeetProof`,
+    description: problem.description?.substring(0, 160) || "Solve a Lean 4 theorem proving problem",
+  };
 }
 
 export default async function ProblemPage({ params }: ProblemPageProps) {

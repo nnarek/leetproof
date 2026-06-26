@@ -1,5 +1,11 @@
 import { Suspense } from "react";
 import ProblemsClient from "./ProblemsClient";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Problems - LeetProof",
+  description: "Browse and solve Lean 4 theorem proving problems",
+};
 
 export default function ProblemsPage() {
   return (

@@ -1,4 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "LeetProof - Theorem Proving Platform",
+  description:
+    "Sharpen your Lean 4 skills by proving theorems and verifying code. Share solutions and hints with the community.",
+};
 
 export default function HomePage() {
   return (

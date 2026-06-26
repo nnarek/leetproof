@@ -1,4 +1,4 @@
-# LeetProof — Theorem Proving in Lean 4
+# LeetProof — Theorem Proving Platform
 
 Sharpen your formal verification skills by proving theorems and verifying code in [Lean 4](https://lean-lang.org/). Think LeetCode, but for mathematical proofs.
 

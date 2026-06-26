@@ -13,9 +13,9 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="text-sm text-muted">
-            © {new Date().getFullYear()} LeetProof. Theorem proving in Lean 4.
+             {new Date().getFullYear()} LeetProof. Theorem proving platform.
           </div>
-          <div className="flex gap-6 text-sm text-muted">
+          {/* <div className="flex gap-6 text-sm text-muted">
             <a
               href="https://github.com/leanprover-community/lean4web"
               target="_blank"
@@ -40,7 +40,7 @@ export default function Footer() {
             >
               Mathlib
             </a>
-          </div>
+          </div> */}
         </div>
       </div>
     </footer>

@@ -15,6 +15,10 @@ export default function AuthCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
+    document.title = "Signing in... - LeetProof";
+  }, []);
+
+  useEffect(() => {
     const supabase = createClient();
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
