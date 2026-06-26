@@ -397,7 +397,7 @@ export default function UserProfileClient({ userId }: UserProfileClientProps) {
           </div>
 
           <div className="flex-1">
-            {!editing ? (
+            {!editing && (
               <>
                 <h1 className="text-2xl font-semibold text-foreground">
                   {profile.username || "(no username)"}
@@ -413,41 +413,44 @@ export default function UserProfileClient({ userId }: UserProfileClientProps) {
                     No email set. Add one to enable password reset.
                   </p>
                 )}
-                {isOwner && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      onClick={() => {
-                        setStatus(null);
-                        setEditing(true);
-                      }}
-                      className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition hover:bg-accent/90"
-                    >
-                      Edit profile
-                    </button>
-                    <button
-                      onClick={handleDownloadArchive}
-                      disabled={downloading}
-                      className="rounded-md bg-hover px-3 py-1.5 text-sm text-foreground transition hover:bg-border disabled:opacity-50"
-                    >
-                      {downloading ? "Preparing..." : "Download my data"}
-                    </button>
-                    <button
-                      onClick={handleSignOut}
-                      className="rounded-md bg-hover px-3 py-1.5 text-sm text-muted transition hover:bg-border hover:text-foreground"
-                    >
-                      Sign Out
-                    </button>
-                    <button
-                      onClick={handleDeleteAccount}
-                      disabled={saving}
-                      className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-3 py-1.5 text-sm font-medium text-[var(--danger)] transition hover:bg-[var(--danger)]/20 disabled:opacity-50"
-                    >
-                      Delete account
-                    </button>
-                  </div>
-                )}
               </>
-            ) : (
+            )}
+            {isOwner && (
+              <div className={`mt-4 flex flex-wrap gap-2${editing ? " invisible pointer-events-none h-0 !mt-0" : ""}`}
+                aria-hidden={editing}
+              >
+                <button
+                  onClick={() => {
+                    setStatus(null);
+                    setEditing(true);
+                  }}
+                  className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition hover:bg-accent/90"
+                >
+                  Edit profile
+                </button>
+                <button
+                  onClick={handleDownloadArchive}
+                  disabled={downloading}
+                  className="rounded-md bg-hover px-3 py-1.5 text-sm text-foreground transition hover:bg-border disabled:opacity-50"
+                >
+                  {downloading ? "Preparing..." : "Download my data"}
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  className="rounded-md bg-hover px-3 py-1.5 text-sm text-muted transition hover:bg-border hover:text-foreground"
+                >
+                  Sign Out
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={saving}
+                  className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-3 py-1.5 text-sm font-medium text-[var(--danger)] transition hover:bg-[var(--danger)]/20 disabled:opacity-50"
+                >
+                  Delete account
+                </button>
+              </div>
+            )}
+            {editing && (
               <form onSubmit={handleSave} className="space-y-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted" htmlFor="profile-username">
