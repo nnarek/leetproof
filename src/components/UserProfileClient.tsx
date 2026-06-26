@@ -1,18 +1,16 @@
 "use client";
 
-import ProfileAvatar from "@/components/ProfileAvatar";
 import { useAuth } from "@/hooks/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import type { Difficulty, Profile } from "@/lib/types";
 import {
   emptyDifficultyStats,
-  getProfileDisplayName,
   getPublicEmail,
   isValidUsername,
   normalizeUsername,
   type DifficultyStat,
 } from "@/lib/profile";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface UserProfileClientProps {
   userId: string;
@@ -31,15 +29,124 @@ const difficultyLabels: Record<Difficulty, string> = {
   hard: "Hard",
 };
 
-const difficultyBarClasses: Record<Difficulty, string> = {
-  easy: "bg-accent",
-  medium: "bg-[var(--badge-warning-text)]",
-  hard: "bg-[var(--badge-danger-text)]",
+const difficultyFillColors: Record<Difficulty, string> = {
+  easy: "var(--success)",
+  medium: "var(--warning)",
+  hard: "var(--danger)",
 };
+
+const difficultyBadgeClasses: Record<Difficulty, string> = {
+  easy: "difficulty-easy",
+  medium: "difficulty-medium",
+  hard: "difficulty-hard",
+};
+
+const avatarColorPrefix = "color:";
 
 function normalizeStats(rows: DifficultyStat[]) {
   const byDifficulty = new Map(rows.map((row) => [row.difficulty, row]));
   return emptyDifficultyStats().map((row) => byDifficulty.get(row.difficulty) ?? row);
+}
+
+function colorForName(name: string) {
+  let hash = 0;
+  for (let index = 0; index < name.length; index += 1) {
+    hash = (hash * 31 + name.charCodeAt(index)) >>> 0;
+  }
+  return `hsl(${hash % 360}, 60%, 45%)`;
+}
+
+function parseStoredColor(value: string) {
+  if (!value.startsWith(avatarColorPrefix)) return null;
+  const color = value.slice(avatarColorPrefix.length).trim();
+  if (/^#[0-9a-fA-F]{3,8}$/.test(color)) return color;
+  if (/^(rgb|hsl)a?\(/i.test(color)) return color;
+  return null;
+}
+
+function UserPageAvatar({
+  name,
+  avatarUrl,
+  size = 96,
+}: {
+  name: string | null | undefined;
+  avatarUrl: string | null | undefined;
+  size?: number;
+}) {
+  const initial = (name ?? "?").trim().charAt(0).toUpperCase() || "?";
+  const px = `${size}px`;
+  const storedColor = avatarUrl ? parseStoredColor(avatarUrl) : null;
+  const isRealImage = avatarUrl && !avatarUrl.startsWith(avatarColorPrefix);
+
+  if (isRealImage) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt={name ?? "avatar"}
+        style={{ width: px, height: px }}
+        className="rounded-full border border-border object-cover"
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  return (
+    <div
+      style={{
+        width: px,
+        height: px,
+        backgroundColor: storedColor ?? colorForName(name ?? "?"),
+        fontSize: size * 0.45,
+      }}
+      className="flex items-center justify-center rounded-full border border-border font-semibold text-white"
+    >
+      {initial}
+    </div>
+  );
+}
+
+function DifficultyBarChart({ stats }: { stats: DifficultyStat[] }) {
+  const totalSolved = stats.reduce((sum, row) => sum + row.solved_count, 0);
+  const totalAvailable = stats.reduce((sum, row) => sum + row.total_count, 0);
+
+  return (
+    <div className="rounded-lg border border-border bg-surface p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-foreground">Problems solved</h2>
+        <span className="text-sm text-muted">
+          {totalSolved} / {totalAvailable}
+        </span>
+      </div>
+      <div className="space-y-2.5">
+        {stats.map((row) => {
+          const percent = row.total_count > 0 ? (row.solved_count / row.total_count) * 100 : 0;
+
+          return (
+            <div key={row.difficulty} className="flex items-center gap-3">
+              <div className="w-16 shrink-0">
+                <span className={`inline-flex rounded border px-2 py-0.5 text-xs font-medium ${difficultyBadgeClasses[row.difficulty]}`}>
+                  {difficultyLabels[row.difficulty]}
+                </span>
+              </div>
+              <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-hover">
+                <div
+                  className="h-full transition-all"
+                  style={{
+                    width: `${percent}%`,
+                    backgroundColor: difficultyFillColors[row.difficulty],
+                  }}
+                />
+              </div>
+              <div className="w-16 shrink-0 text-right text-xs tabular-nums text-muted">
+                {row.solved_count} / {row.total_count}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default function UserProfileClient({ userId }: UserProfileClientProps) {
@@ -47,6 +154,7 @@ export default function UserProfileClient({ userId }: UserProfileClientProps) {
   const [profile, setProfile] = useState<EditableProfile | null>(null);
   const [stats, setStats] = useState<DifficultyStat[]>(emptyDifficultyStats());
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: "error" | "success"; text: string } | null>(null);
 
@@ -131,15 +239,7 @@ export default function UserProfileClient({ userId }: UserProfileClientProps) {
     fetchProfile();
   }, [fetchProfile]);
 
-  const totalProblems = useMemo(
-    () => stats.reduce((sum, row) => sum + row.total_count, 0),
-    [stats]
-  );
-  const solvedProblems = useMemo(
-    () => stats.reduce((sum, row) => sum + row.solved_count, 0),
-    [stats]
-  );
-  const maxTotal = Math.max(1, ...stats.map((row) => row.total_count));
+  const inputClass = "w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted placeholder:opacity-50 focus:border-accent focus:outline-none";
 
   const handleSave = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -181,6 +281,7 @@ export default function UserProfileClient({ userId }: UserProfileClientProps) {
 
       if (profileError) throw profileError;
       setStatus({ type: "success", text: "Profile updated." });
+      setEditing(false);
       await fetchProfile();
     } catch (error) {
       setStatus({ type: "error", text: error instanceof Error ? error.message : String(error) });
@@ -189,133 +290,143 @@ export default function UserProfileClient({ userId }: UserProfileClientProps) {
     }
   };
 
+  const handleCancel = () => {
+    if (!profile) return;
+    setUsername(profile.username ?? "");
+    setEmail(getPublicEmail(profile.email) ?? "");
+    setAvatarUrl(profile.avatar_url ?? "");
+    setEditing(false);
+    setStatus(null);
+  };
+
   if (loading) {
-    return <p className="text-sm text-muted">Loading profile...</p>;
+    return <p className="text-sm text-muted"></p>;
   }
 
   if (!profile) {
     return <p className="text-sm text-muted">User not found.</p>;
   }
 
-  const displayName = getProfileDisplayName(profile);
+  const displayEmail = getPublicEmail(profile.email);
+  const avatarName = profile.username ?? profile.full_name ?? profile.email;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-      <section className="border-b border-border pb-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <ProfileAvatar profile={profile} size="xl" />
-          <div className="min-w-0 flex-1">
-            <h1 className="text-3xl font-bold text-foreground">{displayName}</h1>
-            <p className="mt-1 text-sm text-muted">/{profile.id}</p>
-            {getPublicEmail(profile.email) && (
-              <p className="mt-2 text-sm text-muted">{getPublicEmail(profile.email)}</p>
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="rounded-xl border border-border bg-surface p-6">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+          <div className="shrink-0">
+            <UserPageAvatar
+              name={avatarName}
+              avatarUrl={editing ? avatarUrl || null : profile.avatar_url}
+              size={96}
+            />
+          </div>
+
+          <div className="flex-1">
+            {!editing ? (
+              <>
+                <h1 className="text-2xl font-semibold text-foreground">
+                  {profile.username || "(no username)"}
+                </h1>
+                {profile.full_name && (
+                  <p className="mt-0.5 text-sm text-muted">{profile.full_name}</p>
+                )}
+                {isOwner && displayEmail && (
+                  <p className="mt-2 text-sm text-foreground">{displayEmail}</p>
+                )}
+                {isOwner && !displayEmail && (
+                  <p className="mt-2 text-sm italic text-muted">
+                    No email set. Add one to enable password reset.
+                  </p>
+                )}
+                {isOwner && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => {
+                        setStatus(null);
+                        setEditing(true);
+                      }}
+                      className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition hover:bg-accent/90"
+                    >
+                      Edit profile
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <form onSubmit={handleSave} className="space-y-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted" htmlFor="profile-username">
+                    Username
+                  </label>
+                  <input
+                    id="profile-username"
+                    className={inputClass}
+                    value={username}
+                    onChange={(event) => setUsername(event.target.value)}
+                    disabled={saving}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted" htmlFor="profile-email">
+                    Email
+                  </label>
+                  <input
+                    id="profile-email"
+                    type="email"
+                    className={inputClass}
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    disabled={saving}
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted" htmlFor="profile-avatar">
+                    Avatar URL
+                  </label>
+                  <input
+                    id="profile-avatar"
+                    className={inputClass}
+                    value={avatarUrl}
+                    onChange={(event) => setAvatarUrl(event.target.value)}
+                    disabled={saving}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition hover:bg-accent/90 disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    disabled={saving}
+                    className="rounded-md bg-hover px-3 py-1.5 text-sm text-foreground transition hover:bg-border disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {status && (
+              <p className={`mt-3 rounded-md border px-3 py-2 text-sm ${status.type === "success" ? "badge-success" : "badge-danger"}`}>
+                {status.text}
+              </p>
             )}
           </div>
         </div>
-      </section>
+      </div>
 
-      <section className="grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)]">
-        <div>
-          <div className="mb-5 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">Progress</h2>
-              <p className="mt-1 text-sm text-muted">
-                {solvedProblems} solved out of {totalProblems} problems
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-5">
-            {stats.map((row) => {
-              const totalWidth = `${(row.total_count / maxTotal) * 100}%`;
-              const solvedWidth = row.total_count > 0 ? `${(row.solved_count / row.total_count) * 100}%` : "0%";
-              return (
-                <div key={row.difficulty} className="grid gap-2 sm:grid-cols-[5rem_minmax(0,1fr)_5rem] sm:items-center">
-                  <span className="text-sm font-medium text-foreground">{difficultyLabels[row.difficulty]}</span>
-                  <div className="h-8 rounded-md bg-hover p-1" style={{ width: totalWidth, minWidth: row.total_count > 0 ? "4rem" : "0" }}>
-                    <div className={`h-full rounded ${difficultyBarClasses[row.difficulty]}`} style={{ width: solvedWidth }} />
-                  </div>
-                  <span className="text-sm tabular-nums text-muted sm:text-right">
-                    {row.solved_count}/{row.total_count}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <aside className="rounded-lg border border-border bg-surface/50 p-5">
-          {isOwner ? (
-            <form onSubmit={handleSave} className="space-y-4">
-              <h2 className="text-lg font-semibold text-foreground">Profile settings</h2>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground" htmlFor="profile-username">
-                  Username
-                </label>
-                <input
-                  id="profile-username"
-                  value={username}
-                  onChange={(event) => setUsername(event.target.value)}
-                  className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                  required
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground" htmlFor="profile-email">
-                  Email
-                </label>
-                <input
-                  id="profile-email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  type="email"
-                  className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground" htmlFor="profile-avatar">
-                  Avatar URL
-                </label>
-                <input
-                  id="profile-avatar"
-                  value={avatarUrl}
-                  onChange={(event) => setAvatarUrl(event.target.value)}
-                  type="url"
-                  className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saving ? "Saving..." : "Save changes"}
-              </button>
-              {status && (
-                <p className={`rounded-md border px-3 py-2 text-sm ${status.type === "success" ? "badge-success" : "badge-danger"}`}>
-                  {status.text}
-                </p>
-              )}
-            </form>
-          ) : (
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Profile</h2>
-              <dl className="mt-4 space-y-3 text-sm">
-                <div>
-                  <dt className="text-muted">Username</dt>
-                  <dd className="text-foreground">{displayName}</dd>
-                </div>
-                {getPublicEmail(profile.email) && (
-                  <div>
-                    <dt className="text-muted">Email</dt>
-                    <dd className="text-foreground">{getPublicEmail(profile.email)}</dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-          )}
-        </aside>
-      </section>
+      <div className="mt-6">
+        <DifficultyBarChart stats={stats} />
+      </div>
     </div>
   );
 }
