@@ -263,11 +263,9 @@ export default function UserProfileClient() {
 
     try {
       if (nextEmail && nextEmail !== getPublicEmail(profile.email)) {
-        const { data: updateData, error: updateError } = await supabase.auth.updateUser({ email: nextEmail });
-        if (updateError) throw updateError;
-        if (updateData.user?.email === nextEmail) {
-          updates.auth_email = nextEmail;
-        }
+        const { error: emailError } = await supabase.rpc("set_my_email", { new_email: nextEmail });
+        if (emailError) throw emailError;
+        updates.auth_email = nextEmail;
       }
 
       const { error: profileError } = await supabase
