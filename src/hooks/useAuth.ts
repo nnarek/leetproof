@@ -27,6 +27,16 @@ interface PasswordSignUpInput {
   password: string;
 }
 
+// De-duplicates in-flight auth code exchanges. PKCE codes are single-use, so
+// without this React StrictMode's double-invoked effect (dev) would exchange
+// the same code twice — the second call fails and can leave the app without a
+// session. Storing the promise lets the second run await the first instead.
+type CodeExchangeResult = {
+  data: { user: User | null } | null;
+  error: { message: string } | null;
+};
+const codeExchanges = new Map<string, Promise<CodeExchangeResult>>();
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
@@ -55,57 +65,83 @@ export function useAuth() {
   }, [loadProfile]);
 
   useEffect(() => {
-    // Handle OAuth callback: if an auth code is in the URL, exchange it
-    // for a session client-side (works for both serverless and server modes).
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (!error) {
-          // Clean the code from the URL, preserving any query flags (e.g. mode).
-          params.delete("code");
-          const search = params.toString();
-          window.history.replaceState({}, "", window.location.pathname + (search ? `?${search}` : ""));
-        }
-      });
-    }
+    let cancelled = false;
 
-    // Handle recovery/magic links that deliver the session via the URL hash
-    // fragment (e.g. `#access_token=...&refresh_token=...&type=recovery`).
-    // Without this the recovery session is never established, so the
-    // "Update password" flow stays blocked.
-    const hash = window.location.hash.startsWith("#")
-      ? window.location.hash.slice(1)
-      : "";
-    if (hash) {
-      const hashParams = new URLSearchParams(hash);
-      const accessToken = hashParams.get("access_token");
-      const refreshToken = hashParams.get("refresh_token");
-      if (accessToken && refreshToken) {
-        supabase.auth
-          .setSession({ access_token: accessToken, refresh_token: refreshToken })
-          .then(({ data, error }) => {
-            if (!error) {
-              void setCurrentUser(data.user ?? null);
-              // Strip the tokens from the URL but keep the path/query intact.
-              window.history.replaceState(
-                {},
-                "",
-                window.location.pathname + window.location.search
-              );
-            }
-          });
-      }
-    }
-
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      await setCurrentUser(user);
-      setLoading(false);
+    const cleanUrl = (preserveSearch: boolean) => {
+      const search = preserveSearch ? window.location.search : "";
+      window.history.replaceState({}, "", window.location.pathname + search);
     };
-    getUser();
+
+    // Establish a session from whatever the auth provider put in the URL:
+    //  - PKCE / magic / recovery links: `?code=...` (exchange for a session)
+    //  - implicit links: `#access_token=...&refresh_token=...` (set directly)
+    // Returns true if a session was (or is being) established from the URL.
+    const consumeUrlSession = async (): Promise<boolean> => {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      if (code) {
+        // Reuse an in-flight exchange (StrictMode) instead of re-consuming the
+        // single-use code, and await it so loading reflects the real result.
+        let exchange = codeExchanges.get(code);
+        if (!exchange) {
+          exchange = supabase.auth.exchangeCodeForSession(code);
+          codeExchanges.set(code, exchange);
+        }
+
+        const { data, error } = await exchange;
+        if (error) {
+          // Allow a retry if the exchange genuinely failed.
+          codeExchanges.delete(code);
+          console.error("Auth code exchange failed:", error.message);
+          return false;
+        }
+        if (!cancelled) await setCurrentUser(data?.user ?? null);
+        params.delete("code");
+        const search = params.toString();
+        window.history.replaceState({}, "", window.location.pathname + (search ? `?${search}` : ""));
+        return true;
+      }
+
+      const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
+      if (hash) {
+        const hashParams = new URLSearchParams(hash);
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        if (accessToken && refreshToken) {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) {
+            console.error("Failed to set session from URL hash:", error.message);
+            return false;
+          }
+          if (!cancelled) await setCurrentUser(data.user ?? null);
+          cleanUrl(true);
+          return true;
+        }
+      }
+
+      return false;
+    };
+
+    const init = async () => {
+      const establishedFromUrl = await consumeUrlSession();
+      if (cancelled) return;
+
+      // If the URL didn't carry a session, fall back to the stored one.
+      if (!establishedFromUrl) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (cancelled) return;
+        await setCurrentUser(user);
+      }
+
+      if (!cancelled) setLoading(false);
+    };
+
+    void init();
 
     const {
       data: { subscription },
@@ -116,7 +152,10 @@ export function useAuth() {
       })();
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [setCurrentUser, supabase.auth]);
 
   const signInWithGoogle = async () => {
