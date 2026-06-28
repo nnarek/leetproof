@@ -16,10 +16,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-interface UserProfileClientProps {
-  userId: string;
-}
-
 type EditableProfile = Pick<
   Profile,
   "id" | "username" | "email" | "auth_email" | "full_name" | "avatar_url" | "created_at" | "updated_at"
@@ -135,9 +131,17 @@ function DifficultyBarChart({ stats }: { stats: DifficultyStat[] }) {
   );
 }
 
-export default function UserProfileClient({ userId }: UserProfileClientProps) {
+export default function UserProfileClient() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  // The target user id is a query param of the static /users page
+  // (e.g. /users?id=<uuid>). `null` means we have not read it yet.
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setUserId(params.get("id") ?? "");
+  }, []);
   const [profile, setProfile] = useState<EditableProfile | null>(null);
   const [stats, setStats] = useState<DifficultyStat[]>(emptyDifficultyStats());
   const [loading, setLoading] = useState(true);
@@ -181,6 +185,10 @@ export default function UserProfileClient({ userId }: UserProfileClientProps) {
   }, [user?.id, userId]);
 
   const fetchProfile = useCallback(async () => {
+    if (userId === null) {
+      // Still reading the id from the URL query.
+      return;
+    }
     setLoading(true);
     const supabase = createClient();
 

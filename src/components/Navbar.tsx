@@ -63,7 +63,7 @@ export default function Navbar() {
             ) : user ? (
               <div className="flex items-center gap-3">
                 <Link
-                  href={`/users/${user.id}`}
+                  href={`/users?id=${user.id}`}
                   className="flex items-center gap-2 rounded-md px-1 py-1 transition hover:bg-hover"
                 >
                   <ProfileAvatar
