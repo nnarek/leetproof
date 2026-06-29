@@ -286,7 +286,7 @@ export default function AuthPanel({ onSuccess }: AuthPanelProps) {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-foreground" htmlFor="signup-email">
-                Email <span className="font-normal text-muted">optional</span>
+                Email {/*  <span className="font-normal text-muted">optional</span> */}
               </label>
               <input
                 id="signup-email"
