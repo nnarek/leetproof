@@ -34,7 +34,7 @@ export default function HomePage() {
                 Start Solving →
               </Link>
               <a
-                href="https://lean-lang.org/"
+                href="https://lean-lang.org/learn/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-lg border border-border px-6 py-3 text-sm font-semibold text-muted transition hover:border-accent/50 hover:text-foreground"

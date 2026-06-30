@@ -1,6 +1,12 @@
 import type { Difficulty } from "./types";
 
-export const PASSWORD_AUTH_EMAIL_DOMAIN = "users.leetproof.local";
+// GoTrue rejects reserved TLDs like `.local` ("Email address ... is invalid"),
+// so synthetic password-auth emails must use a real, valid TLD.
+export const PASSWORD_AUTH_EMAIL_DOMAIN = "users.leetproof.app";
+
+// Domains previously used for synthetic emails. Kept so existing accounts are
+// still recognized as password-auth (not shown as a real public email).
+const LEGACY_PASSWORD_AUTH_EMAIL_DOMAINS = ["users.leetproof.local"];
 
 export interface ProfileLike {
   id?: string | null;
@@ -41,7 +47,11 @@ export function getSyntheticAuthEmail(username: string) {
 }
 
 export function isSyntheticAuthEmail(email: string | null | undefined) {
-  return Boolean(email?.toLowerCase().endsWith(`@${PASSWORD_AUTH_EMAIL_DOMAIN}`));
+  const normalized = email?.toLowerCase();
+  if (!normalized) return false;
+  return [PASSWORD_AUTH_EMAIL_DOMAIN, ...LEGACY_PASSWORD_AUTH_EMAIL_DOMAINS].some((domain) =>
+    normalized.endsWith(`@${domain}`)
+  );
 }
 
 export function getPublicEmail(email: string | null | undefined) {

@@ -490,7 +490,9 @@ export default function UserProfileClient() {
                     type="email"
                     className={inputClass}
                     value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    // EMAIL_TEMP: email is read-only for all users; onChange disabled
+                    // onChange={(event) => setEmail(event.target.value)}
+                    readOnly
                     disabled={saving}
                     placeholder="you@example.com"
                   />

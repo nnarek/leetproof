@@ -188,6 +188,8 @@ export default function AuthPanel({ onSuccess }: AuthPanelProps) {
     }
   };
 
+  // EMAIL_TEMP: used only by the disabled "Forgot password?" button; keep until email recovery is re-enabled.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const startPasswordReset = () => {
     setResetIdentifier(signInIdentifier);
     switchMode("forgot");
@@ -227,7 +229,8 @@ export default function AuthPanel({ onSuccess }: AuthPanelProps) {
           <form onSubmit={handleSignIn} className="space-y-4">
             <div>
               <label className="mb-1 block text-sm font-medium text-foreground" htmlFor="signin-identifier">
-                Username or email
+                {/* EMAIL_TEMP: email sign-in disabled; original label was "Username or email" */}
+                Username
               </label>
               <input
                 id="signin-identifier"
@@ -251,6 +254,7 @@ export default function AuthPanel({ onSuccess }: AuthPanelProps) {
                 className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50"
                 required
               />
+              {/* EMAIL_TEMP: email recovery temporarily disabled
               <button
                 type="button"
                 onClick={startPasswordReset}
@@ -258,6 +262,7 @@ export default function AuthPanel({ onSuccess }: AuthPanelProps) {
               >
                 Forgot password?
               </button>
+              */}
             </div>
             <button
               type="submit"
@@ -284,9 +289,10 @@ export default function AuthPanel({ onSuccess }: AuthPanelProps) {
                 required
               />
             </div>
+            {/* EMAIL_TEMP: email field on sign up temporarily disabled
             <div>
               <label className="mb-1 block text-sm font-medium text-foreground" htmlFor="signup-email">
-                Email {/*  <span className="font-normal text-muted">optional</span> */}
+                Email {/*  <span className="font-normal text-muted">optional</span> *\/}
               </label>
               <input
                 id="signup-email"
@@ -297,6 +303,7 @@ export default function AuthPanel({ onSuccess }: AuthPanelProps) {
                 className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50"
               />
             </div>
+            */}
             <div>
               <label className="mb-1 block text-sm font-medium text-foreground" htmlFor="signup-password">
                 Password
